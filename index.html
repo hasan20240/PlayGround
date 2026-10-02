@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>رجل يركض 🏃 3D Runner — Phone/Tablet</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;font-family:system-ui,"Segoe UI",Tahoma,Arial,sans-serif;touch-action:none;overscroll-behavior:none}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block}
+  #hud{position:fixed;top:0;right:0;left:0;display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;pointer-events:none;z-index:5}
+  .pill{background:rgba(10,16,32,.62);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:8px 14px;font-size:15px;font-weight:700;backdrop-filter:blur(8px);min-width:92px;text-align:center}
+  .pill small{display:block;font-size:10px;font-weight:500;opacity:.75}
+  #score{font-variant-numeric:tabular-nums;font-size:20px}
+  #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;background:radial-gradient(120% 90% at 50% 10%,rgba(30,60,140,.55),rgba(5,8,20,.78));backdrop-filter:blur(2px);padding:20px}
+  #card{width:min(440px,94vw);background:rgba(13,20,40,.92);border:1px solid rgba(255,255,255,.16);border-radius:22px;padding:22px 20px 18px;color:#fff;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  #card h1{margin:0 0 4px;font-size:26px}
+  #card p{margin:6px 0;color:#cbd5ff;font-size:14px;line-height:1.7}
+  #man-emoji{font-size:52px;filter:drop-shadow(0 6px 12px rgba(0,0,0,.5));animation:bounce 1s infinite ease-in-out}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  #startBtn{margin-top:12px;width:100%;font-size:22px;font-weight:800;color:#081020;background:linear-gradient(180deg,#ffd54a,#ff9d2e);border:0;border-radius:16px;padding:15px;cursor:pointer;box-shadow:0 8px 0 #a54e00,0 12px 24px rgba(0,0,0,.4)}
+  #startBtn:active{transform:translateY(3px);box-shadow:0 4px 0 #a54e00}
+  .hint{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;font-size:12px;color:#9fb0ff}
+  .hint span{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:999px}
+  #controls{position:fixed;bottom:0;right:0;left:0;z-index:6;display:flex;justify-content:space-between;align-items:end;padding:0 14px calc(14px + env(safe-area-inset-bottom));pointer-events:none}
+  .tbtn{pointer-events:auto;width:72px;height:72px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.14);color:#fff;font-size:26px;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;user-select:none}
+  .tbtn:active{background:rgba(255,255,255,.32)}
+  #midBtns{display:flex;gap:10px}
+  #msg{position:fixed;top:76px;right:0;left:0;text-align:center;color:#fff;font-weight:800;font-size:18px;text-shadow:0 2px 10px #000;z-index:5;pointer-events:none;opacity:0;transition:opacity .3s}
+  #vignette{position:fixed;inset:0;pointer-events:none;z-index:4;background:radial-gradient(90% 75% at 50% 45%,transparent 62%,rgba(0,0,10,.55))}
+  @media (min-width:700px){ .tbtn{width:84px;height:84px} #card h1{font-size:30px} }
+</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vignette"></div>
+<div id="hud">
+  <div class="pill"><small>النقاط SCORE</small><span id="score">0</span></div>
+  <div class="pill"><small>السرعة SPEED</small><span id="speed">0 km/h</span></div>
+  <div class="pill"><small>الأفضل BEST</small><span id="best">0</span></div>
+</div>
+<div id="msg"></div>
+<div id="overlay">
+  <div id="card">
+    <div id="man-emoji">🏃‍♂️💨</div>
+    <h1>رجل يركض — 3D</h1>
+    <p>لعبة ركض ثلاثية الأبعاد للجوال والتابلت 📱<br>اسحب للأعلى للقفز، للأسفل للانزلاق، يمين/يسار لتغيير المسار.<br>اجمع العملات ⭐ وتفادَ الحواجز 🚧</p>
+    <button id="startBtn">Play</button>
+    <p style="font-size:12px;opacity:.8">اضغط Play للبدء • Swipe or buttons on phone</p>
+    <div class="hint"><span>⬆️ قفز</span><span>⬇️ انزلاق</span><span>◀️▶️ مسار</span></div>
+  </div>
+</div>
+<div id="controls">
+  <div style="display:flex;gap:10px">
+    <div class="tbtn" id="btnLeft">◀️</div>
+    <div class="tbtn" id="btnRight">▶️</div>
+  </div>
+  <div id="midBtns">
+    <div class="tbtn" id="btnDown">⬇️</div>
+    <div class="tbtn" id="btnUp">⬆️</div>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x87c5eb);
+scene.fog=new THREE.Fog(0x87c5eb,25,90);
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,200);
+const hemi=new THREE.HemisphereLight(0xbdd8ff,0x3a5f3a,.95); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff2d9,1.9);
+sun.position.set(6,12,6); sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=12;sun.shadow.camera.bottom=-12;
+scene.add(sun);
+// ground
+const groundMat=new THREE.MeshStandardMaterial({color:0x3f9e4d,roughness:1});
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,220),groundMat);
+ground.rotation.x=-Math.PI/2; ground.position.z=-70; ground.receiveShadow=true; scene.add(ground);
+// track
+const trackGroup=new THREE.Group(); scene.add(trackGroup);
+const laneX=[-2.2,0,2.2];
+const trackMat=new THREE.MeshStandardMaterial({color:0x334155,roughness:.9});
+const lineMat=new THREE.MeshBasicMaterial({color:0xffffff});
+const track=new THREE.Mesh(new THREE.BoxGeometry(8.4,.2,220),trackMat);
+track.position.set(0,-.1,-70); track.receiveShadow=true; trackGroup.add(track);
+for(let i=-1;i<=1;i++){const l=new THREE.Mesh(new THREE.BoxGeometry(.14,.02,220),lineMat);l.position.set(i*2.2+1.1,.01,-70);trackGroup.add(l);}
+// side decor
+const decor=[];
+const treeTrunkMat=new THREE.MeshStandardMaterial({color:0x7c4a21,roughness:1});
+const treeTopMat=new THREE.MeshStandardMaterial({color:0x1f7a33,roughness:1});
+const buildMats=[0xff6b6b,0x4ecdc4,0xffe66d,0xa78bfa,0x60a5fa].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.8}));
+function addTree(x,z){const g=new THREE.Group();const t=new THREE.Mesh(new THREE.CylinderGeometry(.18,.25,1.2,7),treeTrunkMat);t.position.y=.6;t.castShadow=true;const c=new THREE.Mesh(new THREE.ConeGeometry(1,2,8),treeTopMat);c.position.y=2;c.castShadow=true;g.add(t,c);g.position.set(x,0,z);scene.add(g);decor.push({m:g,z});}
+function addBuild(x,z){const h=3+Math.random()*6;const b=new THREE.Mesh(new THREE.BoxGeometry(3,h,3),buildMats[(Math.random()*buildMats.length)|0]);b.position.set(x,h/2,z);b.castShadow=true;scene.add(b);decor.push({m:b,z,h});}
+for(let z=10;z>-150;z-=8){addTree(-6-Math.random()*4,z);addTree(6+Math.random()*4,z);if(Math.random()<.6)addBuild(-11-Math.random()*5,z),addBuild(11+Math.random()*5,z);}
+// clouds
+const cloudMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1});
+for(let i=0;i<8;i++){const c=new THREE.Group();for(let k=0;k<3;k++){const s=new THREE.Mesh(new THREE.SphereGeometry(1+Math.random(),10,8),cloudMat);s.position.set(k*1.4,Math.random()*.5,0);c.add(s);}c.position.set((Math.random()-.5)*50,12+Math.random()*8,-20-Math.random()*80);scene.add(c);decor.push({m:c,z:c.position.z,cloud:true});}
+
+// ---- running man (procedural low-poly rig) ----
+function mat(c){return new THREE.MeshStandardMaterial({color:c,roughness:.7});}
+const skin=mat(0xf1b98a), shirt=mat(0xef2d2d), pants=mat(0x1e3aff), shoe=mat(0xffffff), hairM=mat(0x2b2118);
+const man=new THREE.Group(); scene.add(man);
+const hips=new THREE.Group(); hips.position.y=1.05; man.add(hips);
+const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.28,.55,4,10),shirt); torso.position.y=.55; torso.castShadow=true; hips.add(torso);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.24,16,12),skin); head.position.y=1.22; head.castShadow=true; hips.add(head);
+const hair=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8,0,Math.PI*2,0,1.4),hairM); hair.position.y=1.28; hips.add(hair);
+function limb(w,l,mtr){const p=new THREE.Group();const m=new THREE.Mesh(new THREE.CapsuleGeometry(w,l,3,8),mtr);m.position.y=-l/2-w;m.castShadow=true;p.add(m);return {p,m,l,w};}
+const armL={s:new THREE.Group(),e:null},armR={s:new THREE.Group(),e:null},legL={},legR={};
+function buildArm(side){const s=new THREE.Group();s.position.set(.38*side,.95,0);const up=limb(.09,.28,shirt);s.add(up.p);const el=new THREE.Group();el.position.y=-.42;const lo=limb(.075,.26,skin);el.add(lo.p);up.p.add(el);hips.add(s);return {s,el};}
+function buildLeg(side){const s=new THREE.Group();s.position.set(.16*side,.12,0);const up=limb(.12,.4,pants);s.add(up.p);const kn=new THREE.Group();kn.position.y=-.6;const lo=limb(.1,.4,pants);kn.add(lo.p);const ft=new THREE.Mesh(new THREE.BoxGeometry(.16,.12,.34),shoe);ft.position.set(0,-.62,.08);ft.castShadow=true;lo.p.add(ft);up.p.add(kn);hips.add(s);return {s,kn};}
+Object.assign(armL,buildArm(-1));Object.assign(armR,buildArm(1));Object.assign(legL,buildLeg(-1));Object.assign(legR,buildLeg(1));
+man.position.set(0,0,0);
+man.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+// dust particles
+const dustGeo=new THREE.BufferGeometry();const DN=60;const dPos=new Float32Array(DN*3);const dVel=[];
+for(let i=0;i<DN;i++){dPos[i*3]=0;dPos[i*3+1]=-10;dPos[i*3+2]=0;dVel.push(Math.random());}
+dustGeo.setAttribute('position',new THREE.BufferAttribute(dPos,3));
+const dust=new THREE.Points(dustGeo,new THREE.PointsMaterial({color:0xffffff,size:.18,transparent:true,opacity:.8}));
+scene.add(dust);
+// obstacles & coins
+const obsGroup=new THREE.Group();scene.add(obsGroup);
+const barMat=mat(0xff7b00), topMat=mat(0x7c3aed), coinMat=new THREE.MeshStandardMaterial({color:0xffd23f,metalness:.7,roughness:.25,emissive:0x664400});
+let obstacles=[],coins=[];
+function spawnRow(z){
+  const r=Math.random();
+  const lane=(Math.random()*3)|0;
+  if(r<.42){ // low barrier -> jump
+    const g=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(1.8,.9,.3),barMat);b.position.y=.55;b.castShadow=true;g.add(b);
+    const s=new THREE.Mesh(new THREE.BoxGeometry(1.8,.12,.34),new THREE.MeshStandardMaterial({color:0xffffff}));s.position.y=1.02;g.add(s);
+    g.position.set(laneX[lane],0,z);g.userData={type:'jump'};obsGroup.add(g);obstacles.push(g);
+  }else if(r<.72){ // overhead -> slide
+    const g=new THREE.Group();const t=new THREE.Mesh(new THREE.BoxGeometry(2,.7,.4),topMat);t.position.y=1.5;t.castShadow=true;g.add(t);
+    const p1=new THREE.Mesh(new THREE.BoxGeometry(.18,1.9,.18),mat(0x444c5e));p1.position.set(-.9,.95,0);const p2=p1.clone();p2.position.x=.9;g.add(p1,p2);
+    g.position.set(laneX[lane],0,z);g.userData={type:'slide'};obsGroup.add(g);obstacles.push(g);
+  }else if(r<.88){ // full block -> change lane
+    const g=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.9,.5),mat(0xef4444));b.position.y=.95;b.castShadow=true;g.add(b);g.position.set(laneX[lane],0,z);g.userData={type:'block'};obsGroup.add(g);obstacles.push(g);
+    // coin in free lane
+    const free=[0,1,2].filter(i=>i!==lane);const cl=free[(Math.random()*free.length)|0];
+    for(let k=0;k<3;k++){const c=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.08,16),coinMat);c.rotation.x=Math.PI/2;c.position.set(laneX[cl],.9,z+k*1.6);c.userData={spin:Math.random()*6};obsGroup.add(c);coins.push(c);}
+    return;
+  }
+  // coins line
+  if(Math.random()<.6){const cl=(Math.random()*3)|0;for(let k=0;k<4;k++){const c=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.08,16),coinMat);c.rotation.x=Math.PI/2;c.position.set(laneX[cl],.9,z+2+k*1.5);obsGroup.add(c);coins.push(c);}}
+}
+for(let z=-18;z>-150;z-=9)spawnRow(z);
+// state
+let running=false,over=false,lane=1,vy=0,y=0,sliding=0,score=0,best=+(localStorage.getItem('run3d_best')||0),speed=8,dist=0;
+const elScore=document.getElementById('score'),elSpeed=document.getElementById('speed'),elBest=document.getElementById('best'),msg=document.getElementById('msg');
+elBest.textContent=best;
+function toast(t){msg.textContent=t;msg.style.opacity=1;clearTimeout(toast._h);toast._h=setTimeout(()=>msg.style.opacity=0,1200);}
+function startGame(){if(running&&!over)return;document.getElementById('overlay').style.display='none';running=true;over=false;lane=1;vy=0;y=0;score=0;speed=9;dist=0;obstacles.forEach(o=>obsGroup.remove(o));coins.forEach(c=>obsGroup.remove(c));obstacles=[];coins=[];for(let z=-18;z>-150;z-=9)spawnRow(z);toast('اجري! 🏃💨');}
+function gameOver(){over=true;running=false;best=Math.max(best,score|0);localStorage.setItem('run3d_best',best);elBest.textContent=best;const o=document.getElementById('overlay');o.style.display='flex';o.querySelector('h1').textContent='💥 Game Over!';o.querySelector('p').innerHTML=`النقاط: <b>${score|0}</b> • الأفضل: <b>${best}</b><br>اضغط Play للعب مرة أخرى`; }
+document.getElementById('startBtn').addEventListener('click',startGame);
+function moveL(){if(!running)return;lane=Math.max(0,lane-1);} function moveR(){if(!running)return;lane=Math.min(2,lane+1);}
+function jump(){if(!running||y>0.01)return;vy=7.2;toast('قفز! ⬆️');}
+function slide(){if(!running)return;if(y>0.01){vy=-12;}sliding=.7;toast('انزلاق! ⬇️');}
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='a')moveL();if(e.key==='ArrowRight'||e.key==='d')moveR();if(e.key==='ArrowUp'||e.key===' '||e.key==='w')jump();if(e.key==='ArrowDown'||e.key==='s')slide();if(e.key==='Enter')startGame();});
+const bL=document.getElementById('btnLeft'),bR=document.getElementById('btnRight'),bU=document.getElementById('btnUp'),bD=document.getElementById('btnDown');
+const bind=(el,fn)=>{el.addEventListener('pointerdown',e=>{e.preventDefault();fn();},{passive:false});};
+bind(bL,moveL);bind(bR,moveR);bind(bU,jump);bind(bD,slide);
+// swipe
+let sx=0,sy=0;addEventListener('touchstart',e=>{const t=e.changedTouches[0];sx=t.clientX;sy=t.clientY;},{passive:true});
+addEventListener('touchend',e=>{const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<24&&Math.abs(dy)<24)return;if(Math.abs(dx)>Math.abs(dy))dx>0?moveR():moveL();else dy<0?jump():slide();},{passive:true});
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+// loop — this is the "video": continuous run animation
+const clock=new THREE.Clock();
+let t=0;
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),.05); t+=dt;
+  const active=running&&!over;
+  const runF=active?10+speed*.45:7; // leg frequency
+  const ph=t*runF;
+  // run cycle
+  const s=Math.sin(ph),c=Math.cos(ph);
+  legL.s.rotation.x=s*.95; legR.s.rotation.x=-s*.95;
+  legL.kn.rotation.x=Math.max(0,-c)*1.3+.15; legR.kn.rotation.x=Math.max(0,c)*1.3+.15;
+  armL.s.rotation.x=-s*.85; armR.s.rotation.x=s*.85;
+  armL.el.rotation.x=-.6-Math.max(0,s)*.5; armR.el.rotation.x=-.6-Math.max(0,-s)*.5;
+  hips.position.y=1.05+Math.abs(c)*.09-(sliding>0?.45:0)+y;
+  hips.rotation.x=(sliding>0?.7:.12)+(active?.06:0);
+  man.position.x+=(laneX[lane]-man.position.x)*Math.min(1,dt*10);
+  // physics
+  if(y>0||vy!==0){vy-=22*dt;y+=vy*dt;if(y<=0){y=0;vy=0;}}
+  if(sliding>0)sliding-=dt;
+  // world scroll
+  const spd=active?speed:4;
+  if(active){speed=Math.min(22,speed+dt*.35);dist+=spd*dt;score+=dt*10* (1+speed/20);}
+  for(const d of decor){d.m.position.z+=spd*dt;if(d.m.position.z>14){d.m.position.z-=170;}}
+  for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.position.z+=spd*dt;if(o.position.z>6){obsGroup.remove(o);obstacles.splice(i,1);}}
+  for(let i=coins.length-1;i>=0;i--){const cn=coins[i];cn.position.z+=spd*dt;cn.rotation.z+=dt*4;if(cn.position.z>6){obsGroup.remove(cn);coins.splice(i,1);continue;}
+    if(active&&Math.abs(cn.position.z)<.8&&Math.abs(cn.position.x-man.position.x)<.8&&cn.position.y<(y+1.6)){score+=25;obsGroup.remove(cn);coins.splice(i,1);toast('+25 ⭐');}}
+  // recycle
+  if(obstacles.length<16){let mz=-150;for(const o of obstacles)mz=Math.min(mz,o.position.z);spawnRow(mz-9);}
+  // collisions
+  if(active){for(const o of obstacles){if(Math.abs(o.position.z)>.9)continue;if(Math.abs(o.position.x-man.position.x)>.9)continue;
+    const ty=o.userData.type;
+    if(ty==='jump'&&y>.55)continue;
+    if(ty==='slide'&&(sliding>0||y>.4))continue;
+    gameOver();break;}}
+  // dust
+  const pa=dustGeo.attributes.position.array;
+  for(let i=0;i<DN;i++){pa[i*3+1]+=dVel[i]*dt*2;pa[i*3]+= (Math.random()-.5)*dt*2;
+    if(pa[i*3+1]>1.2||pa[i*3+1]<-9){pa[i*3]=man.position.x+(Math.random()-.5)*.6;pa[i*3+1]=.1;pa[i*3+2]=(Math.random()-.5)*.6;}}
+  dustGeo.attributes.position.needsUpdate=true;
+  // camera: chase, slight sway — cinematic video feel
+  const shake=active?Math.sin(t*30)*.02*speed/20:0;
+  camera.position.set(man.position.x*.55+Math.sin(t*.6)*.25,3.1+y*.25,6.2);
+  camera.lookAt(man.position.x*.7,1.2, -4);
+  camera.position.x+=shake;
+  elScore.textContent=score|0; elSpeed.textContent=(speed*3.6|0)+' km/h';
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>
